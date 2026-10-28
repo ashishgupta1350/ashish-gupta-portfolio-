@@ -194,6 +194,7 @@ button { font: inherit; cursor: pointer; }
   scrollbar-width: none;
 }
 .reel::-webkit-scrollbar { display: none; }
+.reel.is-auto { scroll-snap-type: none; }
 /* Every card in a strip shares one height; width follows the creative's own ratio */
 .reel { --strip-h: clamp(356px, 39vw, 466px); }
 .clip { flex: 0 0 auto; margin: 0; scroll-snap-align: start; cursor: zoom-in; }

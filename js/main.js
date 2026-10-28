@@ -70,6 +70,69 @@
     reveals.forEach(function (el) { el.classList.add("is-in"); });
   }
 
+  /* Strips: drift slowly on their own, alternating direction row by row.
+     Cards are duplicated once so the loop is seamless; hover, touch or a manual
+     scroll pauses the drift, and off-screen strips don't move. Runs before the
+     video observer so the copies' videos load lazily too. */
+  var strips = reduceMotion ? [] : document.querySelectorAll(".clients .reel, .reel.phones");
+  strips.forEach(function (strip, i) {
+    var cards = Array.prototype.slice.call(strip.children);
+    if (cards.length < 2) return;
+    // two copies, so one full loop always fits inside the scrollable width, even on wide screens
+    [1, 2].forEach(function () {
+      cards.forEach(function (card) {
+        var copy = card.cloneNode(true);
+        copy.setAttribute("aria-hidden", "true");
+        copy.querySelectorAll("button, a").forEach(function (el) { el.setAttribute("tabindex", "-1"); });
+        if (copy.matches("button, a")) copy.setAttribute("tabindex", "-1");
+        strip.appendChild(copy);
+      });
+    });
+    strip.classList.add("is-auto");
+
+    var speed = 22;                      // px per second
+    var dir = i % 2 === 0 ? 1 : -1;      // even rows drift left, odd rows drift right
+    var pos = null, last = null, loop = 0;
+    var onScreen = false, held = false, resumeAt = 0;
+
+    function loopWidth() { return strip.children[cards.length].offsetLeft - strip.children[0].offsetLeft; }
+    function hold() { held = true; }
+    function release() { held = false; resumeAt = performance.now() + 1200; }
+
+    strip.addEventListener("pointerenter", hold);
+    strip.addEventListener("pointerleave", release);
+    strip.addEventListener("touchstart", hold, { passive: true });
+    strip.addEventListener("touchend", release, { passive: true });
+    strip.addEventListener("focusin", hold);
+    strip.addEventListener("focusout", release);
+    strip.addEventListener("scroll", function () {
+      // a scroll we didn't make: follow the user, then pause briefly
+      if (pos !== null && Math.abs(strip.scrollLeft - pos) > 3) { pos = strip.scrollLeft; resumeAt = performance.now() + 2500; }
+    }, { passive: true });
+
+    function frame(t) {
+      if (!onScreen) { last = null; return; }
+      if (last !== null && !held && t > resumeAt) {
+        if (!loop) loop = loopWidth();
+        if (pos === null) pos = dir < 0 ? loop : strip.scrollLeft;
+        pos += dir * speed * Math.min(t - last, 64) / 1000;
+        if (pos >= loop) pos -= loop;
+        if (pos <= 0) pos += loop;
+        strip.scrollLeft = pos;
+      }
+      last = t;
+      requestAnimationFrame(frame);
+    }
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        var was = onScreen;
+        onScreen = entries[0].isIntersecting;
+        if (onScreen && !was) requestAnimationFrame(frame);
+      }).observe(strip);
+    }
+    window.addEventListener("resize", function () { loop = 0; });
+  });
+
   /* Videos: load and play only while on screen */
   var videos = document.querySelectorAll("video[data-src]");
   if ("IntersectionObserver" in window) {
