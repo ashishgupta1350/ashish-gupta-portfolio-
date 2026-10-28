@@ -1,0 +1,4 @@
+# Static site, no build step. The command only keeps private working files out of the published site.
+[build]
+  publish = "."
+  command = "rm -rf project-notes README.md serve.ps1 netlify.toml"
