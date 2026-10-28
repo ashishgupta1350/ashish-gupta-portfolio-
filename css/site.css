@@ -204,7 +204,12 @@ button { font: inherit; cursor: pointer; }
   transition: transform 0.5s var(--ease);
 }
 .clip:hover video { transform: scale(1.02); }
-.ad button { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.ad button, .clip .poster { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.clip .poster img {
+  height: var(--strip-h); width: auto; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 26px; background: var(--dark-2);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08); transition: transform 0.5s var(--ease);
+}
+.clip:hover .poster img { transform: scale(1.02); }
 .ad img {
   height: var(--strip-h); width: auto; max-width: none; min-width: calc(var(--strip-h) * 0.5); border-radius: 22px; background: var(--dark-2);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08); transition: transform 0.5s var(--ease);

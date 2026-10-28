@@ -1,4 +1,7 @@
-# Portfolio Website v2
+# Portfolio Website v2 (anonymised branch)
+
+This `anonymised` branch hides client identities: generic client names, no client links, client names/logos/phones
+blurred in every creative, and video ads shown as still blurred thumbnails (the loop files are removed here).
 
 Static site (HTML/CSS/JS, no build step) for Ashish Gupta's portfolio. v1 lives in `../Portfolio Website` for comparison.
 
