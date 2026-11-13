@@ -93,14 +93,15 @@
     var speed = 22;                      // px per second
     var dir = i % 2 === 0 ? 1 : -1;      // even rows drift left, odd rows drift right
     var pos = null, last = null, loop = 0;
-    var onScreen = false, held = false, resumeAt = 0;
+    var onScreen = false, held = false, hover = false, resumeAt = 0;
 
     function loopWidth() { return strip.children[cards.length].offsetLeft - strip.children[0].offsetLeft; }
     function hold() { held = true; }
     function release() { held = false; resumeAt = performance.now() + 1200; }
 
-    strip.addEventListener("pointerenter", hold);
-    strip.addEventListener("pointerleave", release);
+    // a mouse resting on the strip only slows it down; it keeps moving so the page never looks frozen
+    strip.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") hover = true; });
+    strip.addEventListener("pointerleave", function () { hover = false; });
     strip.addEventListener("touchstart", hold, { passive: true });
     strip.addEventListener("touchend", release, { passive: true });
     strip.addEventListener("focusin", hold);
@@ -113,9 +114,10 @@
     function frame(t) {
       if (!onScreen) { last = null; return; }
       if (last !== null && !held && t > resumeAt) {
-        if (!loop) loop = loopWidth();
+        // re-measured every frame: lazy images change card widths after they load
+        loop = loopWidth();
         if (pos === null) pos = dir < 0 ? loop : strip.scrollLeft;
-        pos += dir * speed * Math.min(t - last, 64) / 1000;
+        pos += dir * speed * (hover ? 0.35 : 1) * Math.min(t - last, 64) / 1000;
         if (pos >= loop) pos -= loop;
         if (pos <= 0) pos += loop;
         strip.scrollLeft = pos;
@@ -128,7 +130,7 @@
         var was = onScreen;
         onScreen = entries[0].isIntersecting;
         if (onScreen && !was) requestAnimationFrame(frame);
-      }).observe(strip);
+      }, { rootMargin: "250px 0px" }).observe(strip);   // already moving as it scrolls into view
     }
     window.addEventListener("resize", function () { loop = 0; });
   });
@@ -186,7 +188,7 @@
           v.pause();
         }
       });
-    }, { rootMargin: "200px 0px", threshold: 0.2 });
+    }, { rootMargin: "300px 0px", threshold: 0.01 });
     videos.forEach(function (v) { videoObs.observe(v); });
   } else {
     videos.forEach(function (v) { v.src = v.getAttribute("data-src"); });
