@@ -74,7 +74,7 @@
      Cards are duplicated once so the loop is seamless; hover, touch or a manual
      scroll pauses the drift, and off-screen strips don't move. Runs before the
      video observer so the copies' videos load lazily too. */
-  var strips = reduceMotion ? [] : document.querySelectorAll(".clients .reel, .reel.phones");
+  var strips = reduceMotion ? [] : document.querySelectorAll(".clients .reel, .reel.phones, .apps-reel");
   strips.forEach(function (strip, i) {
     var cards = Array.prototype.slice.call(strip.children);
     if (cards.length < 2) return;
@@ -132,6 +132,46 @@
     }
     window.addEventListener("resize", function () { loop = 0; });
   });
+
+  /* Images: load a strip's (or a card's) images only when it nears the screen.
+     Whole strips load together so drifting cards never arrive blank. */
+  var lazyImgs = document.querySelectorAll("img[data-src]");
+  function showImg(img) { if (!img.src) img.src = img.getAttribute("data-src"); }
+  if ("IntersectionObserver" in window) {
+    var groups = new Map();
+    lazyImgs.forEach(function (img) {
+      var box = img.closest(".reel, .marquee, .shots, .films-row, .films-top, .cases") || img;
+      if (!groups.has(box)) groups.set(box, []);
+      groups.get(box).push(img);
+    });
+    var imgObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        (groups.get(entry.target) || []).forEach(showImg);
+        // clones made by the strip loop are found by querying the box again
+        if (entry.target.querySelectorAll) entry.target.querySelectorAll("img[data-src]").forEach(showImg);
+        imgObs.unobserve(entry.target);
+      });
+    }, { rootMargin: "900px 0px" });
+    groups.forEach(function (_, box) { imgObs.observe(box); });
+  } else {
+    lazyImgs.forEach(showImg);
+  }
+
+  /* Video posters: fetch only when the clip is close to the screen */
+  var posterVids = document.querySelectorAll("video[data-poster]");
+  if ("IntersectionObserver" in window) {
+    var posterObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.poster = entry.target.getAttribute("data-poster");
+        posterObs.unobserve(entry.target);
+      });
+    }, { rootMargin: "800px 400px" });
+    posterVids.forEach(function (v) { posterObs.observe(v); });
+  } else {
+    posterVids.forEach(function (v) { v.poster = v.getAttribute("data-poster"); });
+  }
 
   /* Videos: load and play only while on screen */
   var videos = document.querySelectorAll("video[data-src]");
